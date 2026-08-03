@@ -14,9 +14,10 @@ HOW TO REPLACE:
   5. Remove is_mock from the data dict
   6. Drop this file into tools/ and restart the server
 """
-from tools.base_tool import BaseTool, ToolResult, ToolParameter, ToolStatus
 from datetime import datetime
 
+from tools.base_tool import BaseTool, ToolResult, ToolParameter, ToolStatus
+from services.draft_service import DraftEmailService
 
 class DraftEmailTool(BaseTool):
     @property
@@ -42,26 +43,17 @@ class DraftEmailTool(BaseTool):
         return "email"
 
     async def execute(self, params: dict) -> ToolResult:
-        # STUB: Simulate email drafting
-        to = params.get("to", "taskeen.mustafa@codecelix.com")
-        subject = params.get("subject", "No Subject")
-        body = params.get("body", "")
+        valid, message = self.validate_params(params)
 
-        return ToolResult(
-            success=True,
-            message=f'📧 Email drafted to {to}: "{subject}"',
-            data={
-                "is_mock": True,  # Remove this flag in real implementation
-                "email_id": f"EMAIL-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                "to": to,
-                "subject": subject,
-                "body": body,
-                "cc": params.get("cc"),
-                "priority": params.get("priority", "normal"),
-                "status": "draft",
-            },
-            display_type="card",
-        )
+        if not valid:
+            return ToolResult(
+                success=False,
+                message=message,
+                status=ToolStatus.ERROR,
+            )
+
+        service = DraftEmailService()
+        return await service.execute(params)
 
 
 class SendEmailTool(BaseTool):
