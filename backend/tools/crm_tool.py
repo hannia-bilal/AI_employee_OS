@@ -1,18 +1,24 @@
-"""
-AI Employee OS - CRM Tool (Stub)
-Module Owner: Faez Ahmad
-Status: STUB — Replace with real implementation
+from __future__ import annotations
 
-HOW TO REPLACE:
-  1. Keep the same file name: crm_tool.py
-  2. Keep the same class names: FindCustomerTool, CreateLeadTool, UpdateCRMTool
-  3. Keep the same .name property values: "find_customer", "create_lead", "update_crm"
-  4. Implement real logic in execute() — just return a ToolResult
-  5. Remove is_mock from the data dict
-  6. Drop this file into tools/ and restart the server
-"""
-from tools.base_tool import BaseTool, ToolResult, ToolParameter
+import sys
 from datetime import datetime
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from tools.base_tool import BaseTool, ToolParameter, ToolResult
+from CRM.src.modules.activity_timeline.timeline_manager import TimelineManager
+from CRM.src.modules.customer_summaries.summary_manager import CustomerSummaryManager
+from CRM.src.modules.lead_management.lead_manager import LeadManager
+from CRM.src.modules.sales_pipeline.pipeline_manager import SalesPipelineManager
+
+
+lead_manager = LeadManager()
+pipeline_manager = SalesPipelineManager()
+timeline_manager = TimelineManager()
+summary_manager = CustomerSummaryManager()
 
 
 class FindCustomerTool(BaseTool):
@@ -35,22 +41,42 @@ class FindCustomerTool(BaseTool):
         return "crm"
 
     async def execute(self, params: dict) -> ToolResult:
-        query = params.get("query", "")
-        # STUB: Return mock customer data
+        query = str(params.get("query", "")).strip().lower()
+        matches = []
+
+        for lead in lead_manager.list_leads():
+            searchable = " ".join(
+                [lead.name, lead.email, lead.company, lead.phone]
+            ).lower()
+            if query in searchable:
+                matches.append(lead)
+
+        if not matches:
+            return ToolResult(
+                success=False,
+                message=f'No customer found for "{query or "your search"}".',
+                data={"query": query},
+                display_type="text",
+            )
+
+        lead = matches[0]
+        recent_activities = timeline_manager.list_activities_for_lead(lead.id)
+        summary = summary_manager.generate_summary(lead.id, recent_activities)
+
         return ToolResult(
             success=True,
-            message=f'👤 Found customer matching "{query}"',
+            message=f'👤 Found customer {lead.name}',
             data={
-                "is_mock": True,
-                "customer_id": "CUST-001",
-                "name": query.title() if query else "Faez Ahmad",
-                "email": f"{query.lower().replace(' ', '.')}@company.com" if query else "faez.ahmad@codecelix.com",
-                "company": query.title() if query else "CodeCelix",
-                "phone": "+1-555-0123",
-                "status": "active",
-                "total_revenue": 45000,
-                "last_contact": "2026-07-25",
-                "pipeline_stage": "negotiation",
+                "customer_id": lead.id,
+                "name": lead.name,
+                "email": lead.email,
+                "company": lead.company,
+                "phone": lead.phone,
+                "source": lead.source,
+                "pipeline_stage": lead.pipeline_stage,
+                "notes": lead.notes,
+                "summary": summary,
+                "last_updated": datetime.now().isoformat(),
             },
             display_type="card",
         )
@@ -80,19 +106,36 @@ class CreateLeadTool(BaseTool):
         return "crm"
 
     async def execute(self, params: dict) -> ToolResult:
-        name = params.get("name", "Unknown")
-        return ToolResult(
-            success=True,
-            message=f"✅ New lead created: {name}",
-            data={
-                "is_mock": True,
-                "customer_id": f"CUST-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                "name": name,
+        lead = lead_manager.create_lead(
+            {
+                "name": params.get("name", "Unknown"),
                 "email": params.get("email", ""),
                 "company": params.get("company", ""),
                 "phone": params.get("phone", ""),
                 "source": params.get("source", "other"),
-                "pipeline_stage": "new",
+            }
+        )
+        pipeline_manager.add_deal(lead.id, lead.name, 0, lead.pipeline_stage)
+        timeline_manager.add_activity(
+            {
+                "lead_id": lead.id,
+                "title": "Lead created",
+                "description": f"Created lead for {lead.name} from {lead.source}.",
+                "activity_type": "note",
+            }
+        )
+
+        return ToolResult(
+            success=True,
+            message=f"✅ New lead created: {lead.name}",
+            data={
+                "customer_id": lead.id,
+                "name": lead.name,
+                "email": lead.email,
+                "company": lead.company,
+                "phone": lead.phone,
+                "source": lead.source,
+                "pipeline_stage": lead.pipeline_stage,
                 "created_at": datetime.now().isoformat(),
             },
             display_type="card",
@@ -121,15 +164,51 @@ class UpdateCRMTool(BaseTool):
         return "crm"
 
     async def execute(self, params: dict) -> ToolResult:
-        customer_id = params.get("customer_id", "CUST-001")
-        field = params.get("field", "notes")
-        value = params.get("value", "")
+        customer_id = str(params.get("customer_id", "")).strip()
+        field = str(params.get("field", "notes")).strip()
+        value = str(params.get("value", "")).strip()
+
+        lead = lead_manager.get_lead(customer_id)
+        if not lead:
+            matches = [candidate for candidate in lead_manager.list_leads() if customer_id.lower() in candidate.name.lower()]
+            lead = matches[0] if matches else None
+
+        if not lead:
+            return ToolResult(
+                success=False,
+                message=f"No customer found for '{customer_id}'.",
+                data={"customer_id": customer_id},
+                display_type="text",
+            )
+
+        if field == "pipeline_stage":
+            lead_manager.update_lead(lead.id, {"pipeline_stage": value})
+            pipeline_manager.update_stage(lead.id, value)
+        elif field == "notes":
+            lead_manager.update_lead(lead.id, {"notes": value})
+        elif field == "email":
+            lead_manager.update_lead(lead.id, {"email": value})
+        elif field == "phone":
+            lead_manager.update_lead(lead.id, {"phone": value})
+        elif field == "company":
+            lead_manager.update_lead(lead.id, {"company": value})
+        elif field == "status":
+            lead_manager.update_lead(lead.id, {"notes": f"Status updated to {value}"})
+
+        timeline_manager.add_activity(
+            {
+                "lead_id": lead.id,
+                "title": f"Updated {field}",
+                "description": f"Changed {field} to {value}.",
+                "activity_type": "note",
+            }
+        )
+
         return ToolResult(
             success=True,
-            message=f'✅ CRM updated: {field} → "{value}" for {customer_id}',
+            message=f'✅ CRM updated: {field} → "{value}" for {lead.name}',
             data={
-                "is_mock": True,
-                "customer_id": customer_id,
+                "customer_id": lead.id,
                 "updated_field": field,
                 "new_value": value,
                 "updated_at": datetime.now().isoformat(),
