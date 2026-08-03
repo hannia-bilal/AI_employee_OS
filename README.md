@@ -72,3 +72,4 @@ Drop your implementations into the `backend/tools/` directory to have them autom
 
 ## Team
 - **Muhammad Awais** - AI Executive Assistant & Module Integration Lead
+- **Faez Ahmed** - Responsible for CRM Module

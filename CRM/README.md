@@ -90,3 +90,7 @@ The CRM modules are verified through automated tests in [tests/test_crm_modules.
 
 This CRM work was implemented as part of the AI Employee OS project and is intended to be expanded into a full customer relationship management experience.
 
+
+## Done By
+- **Faez Ahmed** - Responsible for CRM Module
+
