@@ -14,10 +14,12 @@ HOW TO REPLACE:
   5. Remove is_mock from the data dict
   6. Drop this file into tools/ and restart the server
 """
-from datetime import datetime
-
 from tools.base_tool import BaseTool, ToolResult, ToolParameter, ToolStatus
 from services.draft_service import DraftEmailService
+from services.send_service import SendEmailService
+from services.summarize_service import SummarizeEmailService
+
+
 
 class DraftEmailTool(BaseTool):
     @property
@@ -78,23 +80,18 @@ class SendEmailTool(BaseTool):
         return "email"
 
     async def execute(self, params: dict) -> ToolResult:
-        to = params.get("to", "taskeen.mustafa@codecelix.com")
-        subject = params.get("subject", "No Subject")
 
-        return ToolResult(
-            success=True,
-            message=f'✅ Email sent to {to}: "{subject}"',
-            data={
-                "is_mock": True,
-                "email_id": f"EMAIL-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                "to": to,
-                "subject": subject,
-                "body": params.get("body", ""),
-                "status": "sent",
-                "sent_at": datetime.now().isoformat(),
-            },
-            display_type="card",
-        )
+        valid, message = self.validate_params(params)
+
+        if not valid:
+            return ToolResult(
+                success=False,
+                message=message,
+                status=ToolStatus.ERROR,
+            )
+
+        service = SendEmailService()
+        return await service.execute(params)
 
 
 class SummarizeEmailTool(BaseTool):
@@ -109,7 +106,11 @@ class SummarizeEmailTool(BaseTool):
     @property
     def parameters(self) -> list[ToolParameter]:
         return [
-            ToolParameter("email_id", "string", "The email or thread ID to summarize"),
+            ToolParameter(
+                "email_content",
+                "string",
+                "Email content to summarize",
+            ),
         ]
 
     @property
@@ -117,21 +118,16 @@ class SummarizeEmailTool(BaseTool):
         return "email"
 
     async def execute(self, params: dict) -> ToolResult:
-        return ToolResult(
-            success=True,
-            message="📋 Email summary generated",
-            data={
-                "is_mock": True,
-                "summary": "Meeting scheduled for Friday after Jummah to discuss Project 3 AI Agent. Action items: Muhammad Awais to integrate AI brain, Faez to finish CRM.",
-                "key_points": [
-                    "Meeting confirmed for Friday post-Jummah",
-                    "Project 3 AI Agent discussion",
-                    "AI brain integration needed",
-                ],
-                "action_items": [
-                    "Awais to integrate AI brain",
-                    "Faez to update CRM module",
-                ],
-            },
-            display_type="card",
-        )
+
+        valid, message = self.validate_params(params)
+
+        if not valid:
+            return ToolResult(
+                success=False,
+                message=message,
+                status=ToolStatus.ERROR,
+            )
+
+        service = SummarizeEmailService()
+
+        return await service.execute(params)
