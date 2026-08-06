@@ -1,52 +1,68 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-venv/
-.venv/
+# ==========================================
+# Gmail OAuth
+# ==========================================
 
-# Environment Variables
-.env
-.env.local
-.env.*.local
+# Real Google OAuth credentials
+backend/auth/credentials.json
 
-# Databases
-*.db
-*.sqlite3
-ai_employee_os.db
+# OAuth access/refresh tokens
+backend/tokens/token.json
 
-# IDEs and Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
+# Optional token backups
+backend/tokens/*.bak
 
-# Frontend/Node
-node_modules/
-.next/
-dist/
-build/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Keep example token file
+!backend/tokens/token.example.json
+# ==========================================
+# Logs
+# ==========================================
 
-# AI / Cache
-.gemini/
+*.log
+logs/
+*.pid
+
+# ==========================================
+# Testing / Coverage
+# ==========================================
+
+.coverage
+.pytest_cache/
+htmlcov/
+
+# ==========================================
+# Type Checkers / Linters
+# ==========================================
+
+.mypy_cache/
+.ruff_cache/
+
+# ==========================================
+# Jupyter
+# ==========================================
+
+.ipynb_checkpoints/
+
+# ==========================================
+# Temporary Files
+# ==========================================
+
+*.tmp
+*.temp
+*.cache
+
+# ==========================================
+# Local Configuration
+# ==========================================
+
+backend/.env
+backend/.env.local
+
+# ==========================================
+# Keep Example Files
+# ==========================================
+
+!backend/.env.example
+!backend/auth/credentials.example.json
+!backend/auth/README.md
+!backend/tokens/README.md
+!backend/tokens/.gitkeep

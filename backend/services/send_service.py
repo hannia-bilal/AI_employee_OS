@@ -3,98 +3,85 @@ Send Email Service
 ------------------
 Handles email sending operations.
 
-Current Version:
-- Simulates email sending.
-- Ready for Gmail API integration.
+Current Behaviour:
+- Uses Gmail API when credentials are available.
+- Falls back to simulation if Gmail is not configured.
 """
 
-from datetime import datetime
-
 from tools.base_tool import ToolResult, ToolStatus
+from utils.simulation_utils import simulation_result
 
 
 class SendEmailService:
 
     async def execute(self, params: dict) -> ToolResult:
+
+        recipient = params["to"]
+        subject = params["subject"]
+        body = params["body"]
+
         try:
-            recipient = params.get("to")
-            subject = params.get("subject")
-            body = params.get("body")
 
-            if not recipient:
-                return ToolResult(
-                    success=False,
-                    message="Recipient is required.",
-                    status=ToolStatus.ERROR,
-                )
+            from services.gmail_service import GmailService
 
-            if not subject:
-                return ToolResult(
-                    success=False,
-                    message="Subject is required.",
-                    status=ToolStatus.ERROR,
-                )
+            gmail = GmailService()
 
-            if not body:
-                return ToolResult(
-                    success=False,
-                    message="Email body is required.",
-                    status=ToolStatus.ERROR,
-                )
-
-            # =====================================================
-            # TODO:
-            # Replace this simulation with GmailService.
-            #
-            # Example:
-            #
-            # from services.gmail_service import GmailService
-            #
-            # gmail = GmailService()
-            #
-            # gmail_message_id = await gmail.send_email(
-            #     recipient=recipient,
-            #     subject=subject,
-            #     body=body,
-            # )
-            #
-            # return ToolResult(
-            #     success=True,
-            #     message=f'✅ Email sent to {recipient}',
-            #     data={
-            #         "gmail_message_id": gmail_message_id,
-            #         "to": recipient,
-            #         "subject": subject,
-            #         "body": body,
-            #         "status": "sent",
-            #     },
-            #     status=ToolStatus.SUCCESS,
-            #     display_type="card",
-            # )
-            # =====================================================
-
-            email_id = f"EMAIL-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            gmail_message_id = await gmail.send_email(
+                recipient=recipient,
+                subject=subject,
+                body=body,
+            )
 
             return ToolResult(
                 success=True,
-                message=f'✅ Email sent to {recipient}: "{subject}"',
+                message=f"✅ Email sent to {recipient}",
                 data={
-                    "email_id": email_id,
+                    "mode": "production",
+                    "gmail_configured": True,
+                    "gmail_message_id": gmail_message_id,
                     "to": recipient,
                     "subject": subject,
                     "body": body,
                     "status": "sent",
-                    "sent_at": datetime.now().isoformat(),
                 },
                 status=ToolStatus.SUCCESS,
                 display_type="card",
             )
 
+        except FileNotFoundError:
+
+            return simulation_result(
+                reason="Google OAuth credentials not found (credentials.json).",
+                recipient=recipient,
+                subject=subject,
+                body=body,
+            )
+
+        except PermissionError:
+
+            return simulation_result(
+                reason="OAuth authorization has not been completed (token.json missing).",
+                recipient=recipient,
+                subject=subject,
+                body=body,
+            )
+
+        except RuntimeError as e:
+
+            return simulation_result(
+                reason=str(e),
+                recipient=recipient,
+                subject=subject,
+                body=body,
+            )
+
         except Exception as e:
+
             return ToolResult(
                 success=False,
                 message="Failed to send email.",
                 data={
+                    "mode": "error",
                     "error": str(e),
                 },
                 status=ToolStatus.ERROR,
