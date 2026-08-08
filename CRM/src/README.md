@@ -1,6 +1,8 @@
 
 # Source Folder
 
-This folder is reserved for future implementation.
 
 Timeline manager done
+Customer summaries done
+Lead management done
+Sales pipeline done

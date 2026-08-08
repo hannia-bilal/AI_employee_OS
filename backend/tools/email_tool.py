@@ -2,10 +2,12 @@
 AI Employee OS - Email Tool
 Real implementation backed by the database.
 """
-from datetime import datetime
-from tools.base_tool import BaseTool, ToolResult, ToolParameter
-from database import SessionLocal
-from models.email import EmailMessage
+from tools.base_tool import BaseTool, ToolResult, ToolParameter, ToolStatus
+from services.draft_service import DraftEmailService
+from services.send_service import SendEmailService
+from services.summarize_service import SummarizeEmailService
+
+
 
 class DraftEmailTool(BaseTool):
     @property
@@ -31,21 +33,17 @@ class DraftEmailTool(BaseTool):
         return "email"
 
     async def execute(self, params: dict) -> ToolResult:
-        to = params.get("to")
-        subject = params.get("subject", "No Subject")
-        body = params.get("body", "")
+        valid, message = self.validate_params(params)
 
-        with SessionLocal() as db:
-            email = EmailMessage(
-                sender="agent@aiemployee.os",
-                recipient=to,
-                subject=subject,
-                body=body,
-                status="draft"
+        if not valid:
+            return ToolResult(
+                success=False,
+                message=message,
+                status=ToolStatus.ERROR,
             )
-            db.add(email)
-            db.commit()
-            db.refresh(email)
+
+        service = DraftEmailService()
+        return await service.execute(params)
 
             return ToolResult(
                 success=True,
@@ -82,21 +80,18 @@ class SendEmailTool(BaseTool):
         return "email"
 
     async def execute(self, params: dict) -> ToolResult:
-        to = params.get("to")
-        subject = params.get("subject", "No Subject")
-        body = params.get("body", "")
 
-        with SessionLocal() as db:
-            email = EmailMessage(
-                sender="agent@aiemployee.os",
-                recipient=to,
-                subject=subject,
-                body=body,
-                status="sent"
+        valid, message = self.validate_params(params)
+
+        if not valid:
+            return ToolResult(
+                success=False,
+                message=message,
+                status=ToolStatus.ERROR,
             )
-            db.add(email)
-            db.commit()
-            db.refresh(email)
+
+        service = SendEmailService()
+        return await service.execute(params)
 
             return ToolResult(
                 success=True,
@@ -123,7 +118,11 @@ class SummarizeEmailTool(BaseTool):
     @property
     def parameters(self) -> list[ToolParameter]:
         return [
-            ToolParameter("email_id", "string", "The email or thread ID to summarize"),
+            ToolParameter(
+                "email_content",
+                "string",
+                "Email content to summarize",
+            ),
         ]
 
     @property
@@ -131,27 +130,16 @@ class SummarizeEmailTool(BaseTool):
         return "email"
 
     async def execute(self, params: dict) -> ToolResult:
-        email_id = params.get("email_id")
-        
-        with SessionLocal() as db:
-            try:
-                email = db.query(EmailMessage).filter(EmailMessage.id == int(email_id)).first()
-            except:
-                email = None
-                
-            if not email:
-                return ToolResult(success=False, message="Email not found")
-                
-            # Naive summarize for now
-            summary = f"Summary of email '{email.subject}':\nIt discusses {email.body[:50]}..."
-            
+
+        valid, message = self.validate_params(params)
+
+        if not valid:
             return ToolResult(
-                success=True,
-                message="📋 Email summary generated",
-                data={
-                    "summary": summary,
-                    "key_points": ["Discussed project updates", "Requested feedback"],
-                    "action_items": ["Review document"],
-                },
-                display_type="card",
+                success=False,
+                message=message,
+                status=ToolStatus.ERROR,
             )
+
+        service = SummarizeEmailService()
+
+        return await service.execute(params)

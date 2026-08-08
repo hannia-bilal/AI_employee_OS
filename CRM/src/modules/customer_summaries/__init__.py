@@ -1,0 +1,1 @@
+from .summary_manager import CustomerSummaryManager

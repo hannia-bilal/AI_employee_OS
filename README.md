@@ -43,23 +43,6 @@ npm run dev
 
 The system is built to be **fully functional out of the box** using a mock database execution layer. However, to connect the AI Employees to the real world, you must configure third-party APIs. 
 
-1. Copy `backend/.env.example` to `backend/.env`.
-2. Fill in the empty API keys.
-3. The system will automatically detect the keys and switch from "Mock Mode" to "Live Mode" for those specific tools.
-
-### Required APIs:
-- **Groq API**: Core LLM engine (Required).
-- **OpenAI API**: For Whisper (Audio Transcription) and OCR (Document Intelligence).
-- **WhatsApp Cloud API**: For the WhatsApp Assistant to send real messages.
-- **Stripe API**: For the Invoice Generator to create real payment links.
-- **SendGrid API**: For the Email Assistant to send real emails.
-- **AWS S3**: For storing generated PDFs (Quotations/Invoices).
-
-## Roles & Specializations
-
-You can interact with different AI Employees by navigating to the **AI Employees** tab and selecting a persona:
-- **AI CEO Assistant**: Full system access, focus on strategy and reporting.
-- **AI Sales Manager**: Access to CRM and Quotations.
-- **AI HR Assistant**: Access to Tasks and Meetings.
-- **AI Customer Support Agent**: Access to WhatsApp and Email modules.
-- **AI Finance Assistant**: Access to Invoices and Reporting.
+## Team
+- **Muhammad Awais** - AI Executive Assistant & Module Integration Lead
+- **Faez Ahmed** - Responsible for CRM Module

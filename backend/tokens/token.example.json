@@ -1,0 +1,12 @@
+{
+  "token": "YOUR_ACCESS_TOKEN",
+  "refresh_token": "YOUR_REFRESH_TOKEN",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "client_id": "YOUR_GOOGLE_CLIENT_ID",
+  "client_secret": "YOUR_GOOGLE_CLIENT_SECRET",
+  "scopes": [
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.readonly"
+  ],
+  "expiry": "2099-12-31T23:59:59Z"
+}
