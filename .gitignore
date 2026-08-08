@@ -66,3 +66,14 @@ backend/.env.local
 !backend/auth/README.md
 !backend/tokens/README.md
 !backend/tokens/.gitkeep
+# Sensitive Project Docs
+*.pdf
+*.docx
+
+# Databases
+*.db
+*.sqlite3
+
+# Python Caches
+__pycache__/
+*.pyc

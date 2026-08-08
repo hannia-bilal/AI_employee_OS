@@ -45,18 +45,6 @@ class DraftEmailTool(BaseTool):
         service = DraftEmailService()
         return await service.execute(params)
 
-            return ToolResult(
-                success=True,
-                message=f'📧 Email drafted to {to}: "{subject}"',
-                data={
-                    "email_id": email.id,
-                    "to": email.recipient,
-                    "subject": email.subject,
-                    "body": email.body,
-                    "status": email.status,
-                },
-                display_type="card",
-            )
 
 class SendEmailTool(BaseTool):
     @property
@@ -93,18 +81,6 @@ class SendEmailTool(BaseTool):
         service = SendEmailService()
         return await service.execute(params)
 
-            return ToolResult(
-                success=True,
-                message=f'✅ Email sent to {to}: "{subject}"',
-                data={
-                    "email_id": email.id,
-                    "to": email.recipient,
-                    "subject": email.subject,
-                    "body": email.body,
-                    "status": email.status,
-                },
-                display_type="card",
-            )
 
 class SummarizeEmailTool(BaseTool):
     @property
