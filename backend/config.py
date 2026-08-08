@@ -12,8 +12,14 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
-    # Database
+    # Database (PostgreSQL fallback to SQLite)
     DATABASE_URL: str = "sqlite:///./ai_employee_os.db"
+    
+    # Cache (Redis)
+    REDIS_URL: Optional[str] = None
+    
+    # Document Search (Elasticsearch)
+    ELASTICSEARCH_URL: Optional[str] = None
 
     # AI Provider
     GROQ_API_KEY: Optional[str] = None

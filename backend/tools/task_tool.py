@@ -1,19 +1,11 @@
 """
-AI Employee OS - Task, Meeting & Reminder Tool (Stub)
-Module Owner: Ali Zafar
-Status: STUB — Replace with real implementation
-
-HOW TO REPLACE:
-  1. Keep the same file name: task_tool.py
-  2. Keep the same class names: CreateTaskTool, ScheduleMeetingTool, SetReminderTool
-  3. Keep the same .name property values: "create_task", "schedule_meeting", "set_reminder"
-  4. Implement real logic in execute() — just return a ToolResult
-  5. Remove is_mock from the data dict
-  6. Drop this file into tools/ and restart the server
+AI Employee OS - Task, Meeting & Reminder Tool
+Real implementation backed by the database.
 """
-from tools.base_tool import BaseTool, ToolResult, ToolParameter
 from datetime import datetime, timedelta
-
+from tools.base_tool import BaseTool, ToolResult, ToolParameter
+from database import SessionLocal
+from models.task import TaskItem
 
 class CreateTaskTool(BaseTool):
     @property
@@ -39,30 +31,41 @@ class CreateTaskTool(BaseTool):
         return "task"
 
     async def execute(self, params: dict) -> ToolResult:
-        title = params.get("title", "Untitled Task")
+        title = params.get("title")
+        if not title:
+            return ToolResult(success=False, message="Title is required")
+            
+        description = params.get("description", "")
         priority = params.get("priority", "medium")
-        deadline = params.get("deadline", (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"))
+        deadline = params.get("deadline")
         assignee = params.get("assignee", "Unassigned")
 
-        task_id = f"TASK-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Combine priority and deadline into description for now since model doesn't have them
+        full_desc = f"{description}\nPriority: {priority}\nDeadline: {deadline}"
 
-        return ToolResult(
-            success=True,
-            message=f'✅ Task created: "{title}" [{priority}] — Due: {deadline}',
-            data={
-                "is_mock": True,
-                "task_id": task_id,
-                "title": title,
-                "description": params.get("description", ""),
-                "priority": priority,
-                "deadline": deadline,
-                "assignee": assignee,
-                "status": "todo",
-                "created_at": datetime.now().isoformat(),
-            },
-            display_type="card",
-        )
+        with SessionLocal() as db:
+            task = TaskItem(
+                title=title,
+                description=full_desc,
+                assigned_to=assignee,
+                status="todo"
+            )
+            db.add(task)
+            db.commit()
+            db.refresh(task)
 
+            return ToolResult(
+                success=True,
+                message=f'✅ Task created: "{title}"',
+                data={
+                    "task_id": task.id,
+                    "title": task.title,
+                    "description": task.description,
+                    "assignee": task.assigned_to,
+                    "status": task.status,
+                },
+                display_type="card",
+            )
 
 class ScheduleMeetingTool(BaseTool):
     @property
@@ -92,27 +95,32 @@ class ScheduleMeetingTool(BaseTool):
         title = params.get("title", "Meeting")
         date = params.get("date", "")
         time_str = params.get("time", "10:00 AM")
+        
+        desc = f"Meeting on {date} at {time_str}\nParticipants: {params.get('participants', '')}\nAgenda: {params.get('agenda', '')}"
+        
+        with SessionLocal() as db:
+            task = TaskItem(
+                title=f"Meeting: {title}",
+                description=desc,
+                assigned_to=params.get("participants", ""),
+                status="scheduled"
+            )
+            db.add(task)
+            db.commit()
+            db.refresh(task)
 
-        meeting_id = f"MTG-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-        return ToolResult(
-            success=True,
-            message=f'📅 Meeting scheduled: "{title}" on {date} at {time_str}',
-            data={
-                "is_mock": True,
-                "meeting_id": meeting_id,
-                "title": title,
-                "date": date,
-                "time": time_str,
-                "participants": params.get("participants", ""),
-                "agenda": params.get("agenda", ""),
-                "duration_minutes": params.get("duration_minutes", 60),
-                "status": "scheduled",
-                "created_at": datetime.now().isoformat(),
-            },
-            display_type="card",
-        )
-
+            return ToolResult(
+                success=True,
+                message=f'📅 Meeting scheduled: "{title}" on {date} at {time_str}',
+                data={
+                    "meeting_id": task.id,
+                    "title": task.title,
+                    "date": date,
+                    "time": time_str,
+                    "status": task.status,
+                },
+                display_type="card",
+            )
 
 class SetReminderTool(BaseTool):
     @property
@@ -138,16 +146,24 @@ class SetReminderTool(BaseTool):
         message = params.get("message", "")
         when = params.get("when", "tomorrow")
 
-        return ToolResult(
-            success=True,
-            message=f'⏰ Reminder set: "{message}" — {when}',
-            data={
-                "is_mock": True,
-                "reminder_id": f"REM-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                "message": message,
-                "trigger_time": when,
-                "status": "active",
-                "created_at": datetime.now().isoformat(),
-            },
-            display_type="text",
-        )
+        with SessionLocal() as db:
+            task = TaskItem(
+                title=f"Reminder: {message[:20]}...",
+                description=f"Remind me: {message}\nWhen: {when}",
+                status="active"
+            )
+            db.add(task)
+            db.commit()
+            db.refresh(task)
+
+            return ToolResult(
+                success=True,
+                message=f'⏰ Reminder set: "{message}" — {when}',
+                data={
+                    "reminder_id": task.id,
+                    "message": message,
+                    "trigger_time": when,
+                    "status": task.status,
+                },
+                display_type="text",
+            )

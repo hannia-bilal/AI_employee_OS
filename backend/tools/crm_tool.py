@@ -1,19 +1,12 @@
 """
-AI Employee OS - CRM Tool (Stub)
-Module Owner: Faez Ahmad
-Status: STUB — Replace with real implementation
-
-HOW TO REPLACE:
-  1. Keep the same file name: crm_tool.py
-  2. Keep the same class names: FindCustomerTool, CreateLeadTool, UpdateCRMTool
-  3. Keep the same .name property values: "find_customer", "create_lead", "update_crm"
-  4. Implement real logic in execute() — just return a ToolResult
-  5. Remove is_mock from the data dict
-  6. Drop this file into tools/ and restart the server
+AI Employee OS - CRM Tool
+Real implementation backed by the database.
 """
+import uuid
+from datetime import datetime, timezone
 from tools.base_tool import BaseTool, ToolResult, ToolParameter
-from datetime import datetime
-
+from database import SessionLocal
+from models.crm import Customer
 
 class FindCustomerTool(BaseTool):
     @property
@@ -35,26 +28,44 @@ class FindCustomerTool(BaseTool):
         return "crm"
 
     async def execute(self, params: dict) -> ToolResult:
-        query = params.get("query", "")
-        # STUB: Return mock customer data
-        return ToolResult(
-            success=True,
-            message=f'👤 Found customer matching "{query}"',
-            data={
-                "is_mock": True,
-                "customer_id": "CUST-001",
-                "name": query.title() if query else "Faez Ahmad",
-                "email": f"{query.lower().replace(' ', '.')}@company.com" if query else "faez.ahmad@codecelix.com",
-                "company": query.title() if query else "CodeCelix",
-                "phone": "+1-555-0123",
-                "status": "active",
-                "total_revenue": 45000,
-                "last_contact": "2026-07-25",
-                "pipeline_stage": "negotiation",
-            },
-            display_type="card",
-        )
-
+        query = params.get("query", "").lower()
+        if not query:
+            return ToolResult(success=False, message="Query parameter is required")
+            
+        with SessionLocal() as db:
+            # Search by name, email, or company
+            customers = db.query(Customer).filter(
+                (Customer.name.ilike(f"%{query}%")) |
+                (Customer.email.ilike(f"%{query}%")) |
+                (Customer.company.ilike(f"%{query}%"))
+            ).all()
+            
+            if not customers:
+                return ToolResult(
+                    success=False,
+                    message=f'❌ No customer found matching "{query}"'
+                )
+                
+            # For simplicity, return the first match
+            customer = customers[0]
+            data = {
+                "customer_id": customer.id,
+                "name": customer.name,
+                "email": customer.email,
+                "company": customer.company,
+                "phone": customer.phone,
+                "status": customer.status,
+                "total_revenue": customer.total_revenue,
+                "pipeline_stage": customer.pipeline_stage,
+                "notes": customer.notes,
+            }
+            
+            return ToolResult(
+                success=True,
+                message=f'👤 Found customer matching "{query}"',
+                data=data,
+                display_type="card",
+            )
 
 class CreateLeadTool(BaseTool):
     @property
@@ -80,24 +91,41 @@ class CreateLeadTool(BaseTool):
         return "crm"
 
     async def execute(self, params: dict) -> ToolResult:
-        name = params.get("name", "Unknown")
-        return ToolResult(
-            success=True,
-            message=f"✅ New lead created: {name}",
-            data={
-                "is_mock": True,
-                "customer_id": f"CUST-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                "name": name,
-                "email": params.get("email", ""),
-                "company": params.get("company", ""),
-                "phone": params.get("phone", ""),
-                "source": params.get("source", "other"),
-                "pipeline_stage": "new",
-                "created_at": datetime.now().isoformat(),
-            },
-            display_type="card",
-        )
-
+        name = params.get("name")
+        if not name:
+            return ToolResult(success=False, message="Name is required to create a lead")
+            
+        with SessionLocal() as db:
+            new_id = f"CUST-{uuid.uuid4().hex[:8].upper()}"
+            customer = Customer(
+                id=new_id,
+                name=name,
+                email=params.get("email"),
+                company=params.get("company"),
+                phone=params.get("phone"),
+                source=params.get("source", "other"),
+                pipeline_stage="new"
+            )
+            db.add(customer)
+            db.commit()
+            db.refresh(customer)
+            
+            data = {
+                "customer_id": customer.id,
+                "name": customer.name,
+                "email": customer.email,
+                "company": customer.company,
+                "phone": customer.phone,
+                "source": customer.source,
+                "pipeline_stage": customer.pipeline_stage,
+            }
+            
+            return ToolResult(
+                success=True,
+                message=f"✅ New lead created: {name} (ID: {customer.id})",
+                data=data,
+                display_type="card",
+            )
 
 class UpdateCRMTool(BaseTool):
     @property
@@ -121,18 +149,38 @@ class UpdateCRMTool(BaseTool):
         return "crm"
 
     async def execute(self, params: dict) -> ToolResult:
-        customer_id = params.get("customer_id", "CUST-001")
-        field = params.get("field", "notes")
+        customer_id_or_name = params.get("customer_id")
+        field = params.get("field")
         value = params.get("value", "")
-        return ToolResult(
-            success=True,
-            message=f'✅ CRM updated: {field} → "{value}" for {customer_id}',
-            data={
-                "is_mock": True,
-                "customer_id": customer_id,
-                "updated_field": field,
-                "new_value": value,
-                "updated_at": datetime.now().isoformat(),
-            },
-            display_type="text",
-        )
+        
+        if not customer_id_or_name or not field:
+            return ToolResult(success=False, message="customer_id and field are required")
+            
+        with SessionLocal() as db:
+            # Try to find by ID first, then by name
+            customer = db.query(Customer).filter(Customer.id == customer_id_or_name).first()
+            if not customer:
+                customer = db.query(Customer).filter(Customer.name.ilike(f"%{customer_id_or_name}%")).first()
+                
+            if not customer:
+                return ToolResult(success=False, message=f"❌ Customer not found: {customer_id_or_name}")
+                
+            # Update the field dynamically
+            if hasattr(customer, field):
+                setattr(customer, field, value)
+                db.commit()
+                db.refresh(customer)
+                
+                return ToolResult(
+                    success=True,
+                    message=f'✅ CRM updated: {field} → "{value}" for {customer.name}',
+                    data={
+                        "customer_id": customer.id,
+                        "name": customer.name,
+                        "updated_field": field,
+                        "new_value": value,
+                    },
+                    display_type="text",
+                )
+            else:
+                return ToolResult(success=False, message=f"❌ Invalid field: {field}")

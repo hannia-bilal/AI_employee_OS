@@ -59,6 +59,20 @@ const navItems = [
     description: "Ali's module",
     badge: "Team",
   },
+  {
+    label: "WhatsApp",
+    href: "/modules/whatsapp",
+    icon: "💬",
+    description: "WhatsApp Assistant",
+    badge: "Team",
+  },
+  {
+    label: "Reports",
+    href: "/modules/reports",
+    icon: "📈",
+    description: "Analytics & Reporting",
+    badge: "Team",
+  },
 ];
 
 export default function Sidebar() {

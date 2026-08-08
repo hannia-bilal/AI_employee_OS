@@ -20,6 +20,11 @@ import models  # noqa: F401
 # Import routers
 from routers.assistant import router as assistant_router
 from routers.dashboard import router as dashboard_router
+from routers.crm import router as crm_router
+from routers.email import router as email_router
+from routers.quotation import router as quotation_router
+from routers.document import router as document_router
+from routers.task import router as task_router
 
 # Import and register tools
 from tools.registry import tool_registry
@@ -28,6 +33,10 @@ from tools.crm_tool import FindCustomerTool, CreateLeadTool, UpdateCRMTool
 from tools.quotation_tool import CreateQuotationTool, CreateInvoiceTool
 from tools.document_tool import SearchDocumentTool, AnswerFromDocsTool
 from tools.task_tool import CreateTaskTool, ScheduleMeetingTool, SetReminderTool
+from tools.whatsapp_tool import SendWhatsAppTool, SummarizeWhatsAppTool
+from tools.report_tool import GenerateReportTool
+from tools.audio_ocr_tool import TranscribeAudioTool, ExtractTextFromImageTool
+from tools.finance_tool import GeneratePDFTool, GeneratePaymentLinkTool
 
 # Configure logging
 logging.basicConfig(
@@ -99,6 +108,16 @@ def register_tools():
         CreateTaskTool(),
         ScheduleMeetingTool(),
         SetReminderTool(),
+        
+        SendWhatsAppTool(),
+        SummarizeWhatsAppTool(),
+        GenerateReportTool(),
+        
+        # Advanced Integration Tools
+        TranscribeAudioTool(),
+        ExtractTextFromImageTool(),
+        GeneratePDFTool(),
+        GeneratePaymentLinkTool(),
     ]
     for tool in tools:
         tool_registry.register(tool)
@@ -153,6 +172,18 @@ def create_app() -> FastAPI:
     # Register routers
     app.include_router(assistant_router)
     app.include_router(dashboard_router)
+    app.include_router(crm_router)
+    app.include_router(email_router)
+    app.include_router(quotation_router)
+    app.include_router(document_router)
+    app.include_router(task_router)
+    
+    from routers.whatsapp import router as whatsapp_router
+    from routers.report import router as report_router
+    from routers.ai_employee import router as ai_employee_router
+    app.include_router(whatsapp_router)
+    app.include_router(report_router)
+    app.include_router(ai_employee_router)
 
     @app.get("/")
     async def root():

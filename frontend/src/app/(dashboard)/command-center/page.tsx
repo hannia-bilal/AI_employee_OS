@@ -1,7 +1,8 @@
 "use client";
 
 import TopBar from "@/components/layout/TopBar";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { api, type ChatResponse, type ActionResult } from "@/lib/api";
 
 interface Message {
@@ -22,7 +23,7 @@ const suggestedCommands = [
   "Set a reminder to follow up with Ali in 3 days",
 ];
 
-export default function CommandCenterPage() {
+function CommandCenterContent() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -38,6 +39,7 @@ export default function CommandCenterPage() {
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     // Check if backend is online
@@ -76,9 +78,13 @@ export default function CommandCenterPage() {
 
     try {
       if (backendOnline) {
+        const personaIdParam = searchParams.get("persona");
+        const personaId = personaIdParam ? parseInt(personaIdParam) : undefined;
+        
         const response: ChatResponse = await api.chat(
           messageText,
-          conversationId || undefined
+          conversationId || undefined,
+          personaId
         );
 
         setConversationId(response.conversation_id);
@@ -578,4 +584,12 @@ function getDemoResponse(message: string): {
     text: "I understood your message, but I'm running in demo mode right now. Start the backend server to get full AI-powered responses!\n\nHere are some things you can try:\n• \"Send a quotation to Faez for 3 custom modules\"\n• \"Schedule a meeting on Friday after Jummah\"\n• \"Create a task to review the Q3 report\"",
     actions: [],
   };
+}
+
+export default function CommandCenterPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 32 }}>Loading...</div>}>
+      <CommandCenterContent />
+    </Suspense>
+  );
 }

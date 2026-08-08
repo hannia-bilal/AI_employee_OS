@@ -30,12 +30,22 @@ async def chat(request: ChatMessageRequest):
     4. Return results with a human-readable response
     """
     conversation_id = request.conversation_id or str(uuid.uuid4())
+    
+    # Map ID to Persona
+    persona_map = {
+        1: "Executive Assistant",
+        2: "Sales Manager",
+        3: "Customer Support",
+        4: "Finance Assistant",
+        5: "HR Assistant"
+    }
+    persona_name = persona_map.get(request.ai_employee_id, "Executive Assistant")
 
     try:
         result = await agent_engine.process_message(
             message=request.message,
             conversation_id=conversation_id,
-            ai_employee_name="Executive Assistant",
+            ai_employee_name=persona_name,
         )
 
         actions = [

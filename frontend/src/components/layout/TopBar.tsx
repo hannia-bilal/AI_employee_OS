@@ -45,15 +45,30 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
 
       {/* Right: Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        {/* Search */}
         <div style={{ position: "relative" }}>
           <input
             type="text"
-            placeholder="Search anything..."
+            placeholder="Search documents..."
             className="input-field"
-            onKeyDown={(e) => {
+            id="global-search-input"
+            onKeyDown={async (e) => {
               if (e.key === "Enter") {
-                alert(`Search for "${e.currentTarget.value}" coming soon!`);
+                const query = e.currentTarget.value;
+                if (!query) return;
+                try {
+                  const res = await fetch("http://localhost:8000/api/documents");
+                  const docs = await res.json();
+                  const results = docs.filter((d: any) => 
+                    d.title.toLowerCase().includes(query.toLowerCase()) || 
+                    d.content.toLowerCase().includes(query.toLowerCase())
+                  );
+                  const resultText = results.length > 0 
+                    ? `Found ${results.length} result(s):\n\n` + results.map((d: any) => `- ${d.title}`).join('\n')
+                    : `No results found for "${query}"`;
+                  alert(resultText);
+                } catch (err) {
+                  alert("Failed to search documents.");
+                }
               }
             }}
             style={{

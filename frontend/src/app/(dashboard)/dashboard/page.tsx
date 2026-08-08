@@ -246,7 +246,7 @@ export default function DashboardPage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      {activity.text}
+                      {activity.description}
                     </p>
                     <span
                       style={{
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {activity.time}
+                      {activity.timestamp}
                     </span>
                   </div>
                 ))}

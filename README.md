@@ -1,74 +1,65 @@
 # AI Employee OS
 
-AI Employee OS is an AI-powered business operating system designed to replace repetitive office work with intelligent AI agents. It serves as a central platform where AI handles emails, customer communication, quotations, invoices, meeting summaries, CRM updates, task management, reporting, and workflow automation.
+AI Employee OS is an AI-powered business operating system designed to replace repetitive office work with intelligent AI agents. It serves as an **AI workforce** for companies, where specialized AI employees handle daily operations.
 
-## Project Vision
-To build the world's first AI-powered digital workforce that helps businesses automate daily operations, reduce operational costs, and improve productivity.
+## Main Features
 
-## 🚀 Powered by Groq API
-This project leverages the lightning-fast **Groq API** (using Llama-3 models) for natural language understanding and intent routing, ensuring near-instantaneous responses and multi-step reasoning capabilities.
+- **AI Executive Assistant**: Natural language understanding, multi-step reasoning.
+- **AI Email Assistant**: Draft, reply, and summarize emails.
+- **AI WhatsApp Assistant**: Send customer support messages and order confirmations.
+- **AI CRM**: Manage leads, customers, and sales pipelines.
+- **AI Quotation & Invoice Generator**: Create professional PDFs and payment links.
+- **AI Meeting Assistant**: Audio transcription and summary extraction.
+- **AI Document Intelligence**: OCR capabilities and company knowledge Q&A.
+- **AI Task Manager**: Assign tasks, set deadlines, and track progress.
+- **AI Reporting**: Generate sales and expense analytics.
 
-## Module Integration Architecture
-This repository contains the core AI Executive Assistant engine. It uses a tool-based architecture where specialized AI employees can execute real business tasks.
+## Technology Stack
 
-### Features
-- **AI Executive Assistant**: Understands natural language, maintains context memory, and executes multi-step workflows.
-- **Dynamic Tool Registry**: Allows easy drop-in of custom modules.
-- **Fallback Demo Mode**: Rule-based fallback if the API key is not configured.
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
+- **Backend**: Python, FastAPI, SQLAlchemy
+- **Database**: SQLite (Development) -> PostgreSQL (Production ready)
+- **AI Engine**: LangChain, Groq API (Llama3)
 
-## 🛠️ Setup & Run Instructions
+## Running the Application
 
-Follow these steps to get the AI Employee OS running on your local machine.
-
-### 1. Backend Setup (FastAPI & AI Engine)
-
-First, install the Python dependencies listed in `requirements.txt`:
-
+### 1. Backend Setup
 ```bash
-# Navigate to backend directory
 cd backend
-
-# Create and activate virtual environment (Windows)
 python -m venv venv
-venv\Scripts\activate
-
-# Install all required dependencies
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-#### Configure Environment
-Copy `backend/.env` (if it doesn't exist, create it) and add your Groq API key:
-```env
-# Get a free key from https://console.groq.com
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-#### Run the Backend Server
+### 2. Frontend Setup
 ```bash
-uvicorn main:app --reload --port 8000
-```
-*API Documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).*
-
-### 2. Frontend Setup (Next.js Dashboard)
-
-In a new terminal window, install the Node.js dependencies and start the UI:
-
-```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install Node dependencies
 npm install
-
-# Run the development server
 npm run dev
 ```
-*The Command Center interface will be available at [http://localhost:3000](http://localhost:3000).*
 
-## Integrating New Modules (For Teammates)
-If you are developing a module (e.g., CRM, Email, Quotation), refer to the integration guide located at `backend/tools/INTEGRATION_GUIDE.md`.
+## API Key Configuration (Activating Real Integrations)
 
-Drop your implementations into the `backend/tools/` directory to have them automatically picked up by the AI Agent!
+The system is built to be **fully functional out of the box** using a mock database execution layer. However, to connect the AI Employees to the real world, you must configure third-party APIs. 
 
-## Team
-- **Muhammad Awais** - AI Executive Assistant & Module Integration Lead
+1. Copy `backend/.env.example` to `backend/.env`.
+2. Fill in the empty API keys.
+3. The system will automatically detect the keys and switch from "Mock Mode" to "Live Mode" for those specific tools.
+
+### Required APIs:
+- **Groq API**: Core LLM engine (Required).
+- **OpenAI API**: For Whisper (Audio Transcription) and OCR (Document Intelligence).
+- **WhatsApp Cloud API**: For the WhatsApp Assistant to send real messages.
+- **Stripe API**: For the Invoice Generator to create real payment links.
+- **SendGrid API**: For the Email Assistant to send real emails.
+- **AWS S3**: For storing generated PDFs (Quotations/Invoices).
+
+## Roles & Specializations
+
+You can interact with different AI Employees by navigating to the **AI Employees** tab and selecting a persona:
+- **AI CEO Assistant**: Full system access, focus on strategy and reporting.
+- **AI Sales Manager**: Access to CRM and Quotations.
+- **AI HR Assistant**: Access to Tasks and Meetings.
+- **AI Customer Support Agent**: Access to WhatsApp and Email modules.
+- **AI Finance Assistant**: Access to Invoices and Reporting.
